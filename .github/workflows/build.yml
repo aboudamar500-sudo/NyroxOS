@@ -41,7 +41,7 @@ jobs:
                 --mirror-binary https://deb.debian.org/debian/ \
                 --mirror-chroot-security https://security.debian.org/debian-security/ \
                 --mirror-binary-security https://security.debian.org/debian-security/ \
-                --debian-installer false \
+                --debian-installer none \
                 --bootappend-live "boot=live components quiet splash"
 
               lb build
