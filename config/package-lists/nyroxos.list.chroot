@@ -1,0 +1,13 @@
+linux-image-amd64
+systemd
+systemd-sysv
+lxqt
+sddm
+plymouth
+plymouth-themes
+network-manager
+sudo
+dbus-x11
+firefox-esr
+fonts-noto-core
+fonts-noto-color-emoji
