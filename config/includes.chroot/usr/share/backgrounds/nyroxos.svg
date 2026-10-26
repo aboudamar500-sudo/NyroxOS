@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07110D"/>
+      <stop offset="0.55" stop-color="#10251B"/>
+      <stop offset="1" stop-color="#030806"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#176B43" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#07110D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <ellipse cx="960" cy="500" rx="720" ry="560" fill="url(#glow)"/>
+  <g fill="none" stroke="#35D07F" stroke-opacity=".10">
+    <circle cx="960" cy="490" r="230"/>
+    <circle cx="960" cy="490" r="330"/>
+    <circle cx="960" cy="490" r="430"/>
+    <path d="M0 850 L650 200 M1270 1080 L1920 430"/>
+  </g>
+  <g text-anchor="middle" font-family="sans-serif">
+    <text x="960" y="510" font-size="100" font-weight="bold" letter-spacing="14" fill="#35D07F">NYROXOS</text>
+    <rect x="825" y="550" width="270" height="3" rx="2" fill="#35D07F" opacity=".8"/>
+    <text x="960" y="600" font-size="23" letter-spacing="7" fill="#C1D8CB">YOUR SYSTEM. YOUR WAY.</text>
+  </g>
+</svg>

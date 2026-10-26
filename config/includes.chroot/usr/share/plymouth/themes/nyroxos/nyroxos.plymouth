@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=NyroxOS
+Description=NyroxOS boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/nyroxos
+ScriptFile=/usr/share/plymouth/themes/nyroxos/nyroxos.script

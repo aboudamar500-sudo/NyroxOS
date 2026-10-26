@@ -11,3 +11,6 @@ dbus-x11
 firefox-esr
 fonts-noto-core
 fonts-noto-color-emoji
+
+# NyroxOS desktop icons
+papirus-icon-theme
