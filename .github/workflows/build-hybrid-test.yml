@@ -1,0 +1,69 @@
+name: NyroxOS Hybrid Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test-iso-boot]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo apt-get clean
+          sudo rm -rf /usr/local/lib/android/sdk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          df -h /
+
+      - name: Build Debian Live ISO
+        run: |
+          docker run --privileged --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            -w /work \
+            debian:trixie \
+            bash -euxc '
+              apt-get update
+              apt-get install -y live-build debootstrap \
+                squashfs-tools xorriso isolinux syslinux-common \
+                grub-pc-bin grub-efi-amd64-bin dosfstools mtools
+
+              rm -rf config/binary config/bootstrap config/chroot \
+                config/common config/source
+
+              lb config \
+                --mode debian \
+                --distribution trixie \
+                --architectures amd64 \
+                --binary-images iso-hybrid \
+                --archive-areas "main contrib non-free-firmware" \
+                --mirror-bootstrap https://deb.debian.org/debian/ \
+                --mirror-chroot https://deb.debian.org/debian/ \
+                --mirror-binary https://deb.debian.org/debian/ \
+                --mirror-chroot-security https://security.debian.org/debian-security/ \
+                --mirror-binary-security https://security.debian.org/debian-security/ \
+                --debian-installer none \
+                --bootappend-live "boot=live components quiet splash"
+
+              lb build
+            '
+
+      - name: Verify ISO output
+        run: |
+          ls -lh live-image-amd64.hybrid.iso
+          test -s live-image-amd64.hybrid.iso
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: NyroxOS-Hybrid-Test
+          path: live-image-amd64.hybrid.iso
+          if-no-files-found: error
+          retention-days: 7
