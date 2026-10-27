@@ -6,7 +6,7 @@ on:
     branches: [test-iso-boot]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -60,10 +60,13 @@ jobs:
           ls -lh live-image-amd64.hybrid.iso
           test -s live-image-amd64.hybrid.iso
 
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: NyroxOS-Hybrid-Test
-          path: live-image-amd64.hybrid.iso
-          if-no-files-found: error
-          retention-days: 7
+      - name: Split ISO for GitHub Release
+        run: |
+          split -b 1500M -d -a 2 live-image-amd64.hybrid.iso NyroxOS-part-
+
+      - name: Publish ISO parts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="nyroxos-test-${GITHUB_RUN_NUMBER}"
+          gh release create "$TAG" NyroxOS-part-*             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "NyroxOS Test ${GITHUB_RUN_NUMBER}"             --notes "Experimental NyroxOS ISO split into parts. Join the parts in numeric order before use."
