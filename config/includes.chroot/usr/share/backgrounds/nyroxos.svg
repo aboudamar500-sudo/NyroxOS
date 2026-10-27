@@ -1,26 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#07110D"/>
-      <stop offset="0.55" stop-color="#10251B"/>
-      <stop offset="1" stop-color="#030806"/>
-    </linearGradient>
-    <radialGradient id="glow">
-      <stop offset="0" stop-color="#176B43" stop-opacity=".55"/>
-      <stop offset="1" stop-color="#07110D" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="1920" height="1080" fill="url(#bg)"/>
-  <ellipse cx="960" cy="500" rx="720" ry="560" fill="url(#glow)"/>
-  <g fill="none" stroke="#35D07F" stroke-opacity=".10">
-    <circle cx="960" cy="490" r="230"/>
-    <circle cx="960" cy="490" r="330"/>
-    <circle cx="960" cy="490" r="430"/>
-    <path d="M0 850 L650 200 M1270 1080 L1920 430"/>
-  </g>
-  <g text-anchor="middle" font-family="sans-serif">
-    <text x="960" y="510" font-size="100" font-weight="bold" letter-spacing="14" fill="#35D07F">NYROXOS</text>
-    <rect x="825" y="550" width="270" height="3" rx="2" fill="#35D07F" opacity=".8"/>
-    <text x="960" y="600" font-size="23" letter-spacing="7" fill="#C1D8CB">YOUR SYSTEM. YOUR WAY.</text>
-  </g>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#080808"/>
+  <stop offset=".48" stop-color="#292929"/>
+  <stop offset="1" stop-color="#050505"/>
+ </linearGradient>
+ <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#FFFFFF" stop-opacity=".16"/>
+  <stop offset=".5" stop-color="#BDBDBD" stop-opacity=".025"/>
+  <stop offset="1" stop-color="#FFFFFF" stop-opacity=".10"/>
+ </linearGradient>
+ <radialGradient id="glow">
+  <stop offset="0" stop-color="#FFFFFF" stop-opacity=".12"/>
+  <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+ </radialGradient>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<ellipse cx="960" cy="470" rx="850" ry="620" fill="url(#glow)"/>
+<g fill="none" stroke="#FFFFFF" stroke-opacity=".075">
+ <circle cx="960" cy="540" r="260"/>
+ <circle cx="960" cy="540" r="390"/>
+ <circle cx="960" cy="540" r="520"/>
+ <path d="M-100 900 L700 100 L920 100 L120 900 Z" fill="url(#ribbon)" stroke="none"/>
+ <path d="M1100 1080 L1920 260 L1920 480 L1320 1080 Z" fill="url(#ribbon)" stroke="none"/>
+ <path d="M0 950 L950 0 M970 1080 L1920 130"/>
+</g>
+<path d="M0 0 H500 L0 500 Z" fill="#FFFFFF" opacity=".025"/>
+<path d="M1920 1080 H1450 L1920 610 Z" fill="#FFFFFF" opacity=".035"/>
 </svg>

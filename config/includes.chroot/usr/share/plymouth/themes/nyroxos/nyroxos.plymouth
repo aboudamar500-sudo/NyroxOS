@@ -1,6 +1,6 @@
 [Plymouth Theme]
-Name=NyroxOS
-Description=NyroxOS boot splash
+Name=Nyrox OS
+Description=Nyrox OS monochrome boot splash
 ModuleName=script
 
 [script]

@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+if ! grep -qE '^[[:space:]]*en_US.UTF-8 UTF-8' /etc/locale.gen; then
+    echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+fi
+if ! grep -qE '^[[:space:]]*ar_EG.UTF-8 UTF-8' /etc/locale.gen; then
+    echo 'ar_EG.UTF-8 UTF-8' >> /etc/locale.gen
+fi
+locale-gen

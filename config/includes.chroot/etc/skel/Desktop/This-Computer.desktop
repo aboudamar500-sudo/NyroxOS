@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=This Computer
+Name[ar]=هذا الكمبيوتر
+Comment=This Computer
+Exec=pcmanfm-qt computer:///
+Icon=computer
+Terminal=false
+Categories=System;

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NyroxOS Desktop Manager
+Name[ar]=مدير سطح المكتب
+Exec=pcmanfm-qt --desktop
+OnlyShowIn=LXQt;
+Terminal=false
+X-LXQt-Need-Tray=false

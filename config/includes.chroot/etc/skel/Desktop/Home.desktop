@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Home
+Name[ar]=المجلد الشخصي
+Comment=Home
+Exec=pcmanfm-qt
+Icon=user-home
+Terminal=false
+Categories=System;

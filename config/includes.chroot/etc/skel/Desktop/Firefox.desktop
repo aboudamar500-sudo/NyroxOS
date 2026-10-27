@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Firefox ESR
+Name[ar]=متصفح فايرفوكس
+Comment=Firefox ESR
+Exec=firefox-esr
+Icon=firefox-esr
+Terminal=false
+Categories=System;

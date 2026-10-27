@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Trash
+Name[ar]=سلة المهملات
+Comment=Trash
+Exec=pcmanfm-qt trash:///
+Icon=user-trash
+Terminal=false
+Categories=System;

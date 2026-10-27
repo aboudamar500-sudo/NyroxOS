@@ -1,0 +1,3 @@
+# Hide non-USB disks and partitions from UDisks-based desktop interfaces.
+SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", SUBSYSTEMS!="usb", ENV{UDISKS_IGNORE}="1"
+SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", SUBSYSTEMS!="usb", ENV{UDISKS_IGNORE}="1"

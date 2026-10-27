@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NyroxOS Network Manager
+Name[ar]=مدير الشبكة
+Comment=Manage Wi-Fi and network connections
+Exec=nm-tray
+Terminal=false
+OnlyShowIn=LXQt;
