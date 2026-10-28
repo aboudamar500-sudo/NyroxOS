@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -60,10 +60,18 @@ jobs:
           ls -lh live-image-amd64.iso
           test -s live-image-amd64.iso
 
-      - name: Upload ISO
-        uses: actions/upload-artifact@v4
-        with:
-          name: NyroxOS-ISO-Test
-          path: live-image-amd64.iso
-          if-no-files-found: error
-          retention-days: 7
+      - name: Prepare release files
+        id: release
+        run: |
+          set -euo pipefail
+          mkdir release-files
+          split -b 1900M -d -a 3 live-image-amd64.iso release-files/NyroxOS.iso.part-
+          sha256sum release-files/* > release-files/SHA256SUMS
+          echo "tag=nyroxos-test-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.release.outputs.tag }}" release-files/* --repo "$GITHUB_REPOSITORY" --title "NyroxOS Test $GITHUB_RUN_NUMBER" --notes "Automated test build. Download all ISO parts and SHA256SUMS, then join the parts in filename order before using the ISO."
