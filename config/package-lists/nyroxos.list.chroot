@@ -1,6 +1,7 @@
 linux-image-amd64
 systemd
 systemd-sysv
+zram-tools
 lxqt
 sddm
 plymouth
@@ -71,9 +72,3 @@ plasma-systemmonitor
 kdeconnect
 
 # KDE Plasma Desktop Session
-plasma-desktop
-plasma-workspace
-plasma-nm
-plasma-pa
-systemsettings
-kwin-x11
