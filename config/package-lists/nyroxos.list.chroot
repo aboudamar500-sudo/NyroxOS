@@ -50,3 +50,31 @@ firmware-brcm80211
 firmware-atheros
 
 firmware-mediatek
+
+# KDE Discover App Store
+plasma-discover
+plasma-discover-backend-flatpak
+flatpak
+
+# Official LXQt Application Launcher
+lxqt-runner
+
+# Official KDE Applications
+dolphin
+konsole
+ark
+okular
+kcalc
+kate
+gwenview
+spectacle
+plasma-systemmonitor
+kdeconnect
+
+# KDE Plasma Desktop Session
+plasma-desktop
+plasma-workspace
+plasma-nm
+plasma-pa
+systemsettings
+kwin-x11

@@ -1,17 +1,17 @@
 #!/bin/sh
 set -e
 
-THEME=/usr/share/plymouth/themes/nyroxos/nyroxos.plymouth
+THEME=/usr/share/plymouth/themes/spinner/spinner.plymouth
 
 if [ -f "$THEME" ]; then
     update-alternatives --install \
         /usr/share/plymouth/themes/default.plymouth \
         default.plymouth "$THEME" 100
+    update-alternatives --set default.plymouth "$THEME"
 
     if command -v plymouth-set-default-theme >/dev/null 2>&1; then
-        plymouth-set-default-theme -R nyroxos
+        plymouth-set-default-theme -R spinner
     else
-        update-alternatives --set default.plymouth "$THEME"
         update-initramfs -u
     fi
 fi
