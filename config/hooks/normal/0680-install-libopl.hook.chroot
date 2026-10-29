@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+REV=fd6a1f86832716b0e52ef9547be1225bf485a832
+SRC=/opt/nyroxos-libopl-src
+apt-get update
+apt-get install -y git ca-certificates python3 python3-venv python3-setuptools python3-requests
+git clone https://github.com/Nold360/libopl.git "$SRC"
+git -C "$SRC" checkout "$REV"
+python3 -m venv --system-site-packages /opt/nyroxos-libopl-venv
+/opt/nyroxos-libopl-venv/bin/pip install --no-deps "$SRC"
+cat > /usr/local/bin/opl <<'WRAPPER'
+#!/bin/sh
+exec /opt/nyroxos-libopl-venv/bin/opl "$@"
+WRAPPER
+chmod 0755 /usr/local/bin/opl
+test -x /opt/nyroxos-libopl-venv/bin/opl
+/usr/local/bin/opl --help >/dev/null
+apt-get clean
+rm -rf /var/lib/apt/lists/*

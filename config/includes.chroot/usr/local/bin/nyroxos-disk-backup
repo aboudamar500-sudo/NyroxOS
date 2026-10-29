@@ -1,0 +1,49 @@
+#!/bin/sh
+set -eu
+
+command -v zenity >/dev/null 2>&1 || exit 1
+
+while true; do
+    action=$(zenity --list --title="NyroxOS Disk Backup" \
+        --text="اختر العملية" --column="العملية" \
+        "عرض الأقراص" "إنشاء صورة قطاعية" "إغلاق") || exit 0
+
+    case "$action" in
+        "عرض الأقراص")
+            lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS |
+                zenity --text-info --title="الأقراص المتصلة" --width=850 --height=450
+            ;;
+        "إنشاء صورة قطاعية")
+            disks=$(lsblk -dpno NAME,SIZE,MODEL,TYPE | awk '$4=="disk" {print $1 " | " $2 " | " $3}')
+            [ -n "$disks" ] || { zenity --warning --text="لم يتم العثور على أقراص."; continue; }
+
+            selected=$(printf '%s\n' "$disks" | zenity --list \
+                --title="اختيار قرص المصدر" --text="اختر القرص الصحيح؛ سيتم قراءته فقط." \
+                --column="القرص" --width=800 --height=400) || continue
+            source=${selected%% |*}
+            [ -b "$source" ] || { zenity --error --text="مصدر غير صالح."; continue; }
+
+            target=$(zenity --file-selection --save --confirm-overwrite \
+                --title="حفظ صورة القرص" --filename="$HOME/usb-backup.img") || continue
+            [ -n "$target" ] || continue
+            [ ! -b "$target" ] || { zenity --error --text="اختر ملفًا، لا جهازًا."; continue; }
+            [ ! -e "$target" ] || { zenity --error --text="الملف موجود مسبقًا. اختر اسمًا جديدًا لحماية النسخة القديمة."; continue; }
+            parent=$(dirname "$target")
+            [ -d "$parent" ] && [ -w "$parent" ] || { zenity --error --text="مجلد الوجهة غير موجود أو غير قابل للكتابة."; continue; }
+
+            zenity --question --title="تأكيد إنشاء الصورة" \
+                --text="سيتم قراءة القرص:\n$source\nوحفظ صورة في:\n$target\n\nتأكد أن الوجهة موجودة على قرص آخر وبها مساحة كافية. متابعة؟" || continue
+
+            if command -v ddrescue >/dev/null 2>&1; then
+                if pkexec ddrescue -n "$source" "$target" "$target.map"; then
+                    zenity --info --text="اكتمل النسخ الأولي إلى:\n$target"
+                else
+                    zenity --error --text="تعذر إكمال النسخ. تحقق من السجل والمساحة."
+                fi
+            else
+                zenity --error --text="ddrescue غير مثبت."
+            fi
+            ;;
+        "إغلاق") exit 0 ;;
+    esac
+done

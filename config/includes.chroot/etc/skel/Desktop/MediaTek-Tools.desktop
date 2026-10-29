@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MediaTek Tools
+Name[ar]=أدوات ميديا تك
+Comment=Read and back up supported MediaTek devices
+Comment[ar]=قراءة ونسخ احتياطي لأجهزة ميديا تك المدعومة
+Exec=/usr/local/bin/mtkclient-gui
+Icon=applications-engineering
+Terminal=false
+Categories=System;Utility;

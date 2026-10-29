@@ -1,10 +1,10 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Terminal
-Name[ar]=الطرفية
-Comment=Terminal
-Exec=qterminal
+Name=Nyrox Terminal
+Name[ar]=طرفية نيروكس
+Comment=NyroxOS development and Android maintenance terminal
+Exec=qterminal -e bash -ic 'echo "Nyrox Terminal"; echo "Type nyrox help to get started."; exec bash -i'
 Icon=utilities-terminal
 Terminal=false
 Categories=System;

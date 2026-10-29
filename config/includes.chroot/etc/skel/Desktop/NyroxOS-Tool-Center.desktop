@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=NyroxOS Tool Center
+Name[ar]=مركز أدوات NyroxOS
+Comment=USB, disk, PS2, PS3 and device maintenance tools
+Comment[ar]=أدوات USB والأقراص والصيانة
+Exec=/usr/local/bin/nyroxos-tool-center
+Icon=applications-system
+Terminal=false
+Categories=System;Utility;
+StartupNotify=true

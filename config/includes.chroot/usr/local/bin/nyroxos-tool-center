@@ -1,0 +1,97 @@
+#!/bin/sh
+set -eu
+
+if ! command -v zenity >/dev/null 2>&1; then
+    echo "NyroxOS Tool Center requires zenity."
+    exit 1
+fi
+
+while true; do
+    choice=$(zenity --list \
+        --title="NyroxOS Tool Center" \
+        --text="اختر مجموعة الأدوات" \
+        --column="الأداة" \
+        "معلومات USB والأقراص" \
+        "تقسيم الأقراص" \
+        "النسخ الاحتياطي والاستعادة" \
+        "فحص USB والسعة" \
+        "فحص أنظمة الملفات" \
+        "أدوات PS2 / OPL" \
+        "أدوات صور PS3" \
+        "أدوات Ventoy" \
+        "أدوات MediaTek" \
+        "إغلاق" --height=420 --width=520) || exit 0
+
+    case "$choice" in
+        "معلومات USB والأقراص")
+            if command -v lsblk >/dev/null 2>&1; then
+                lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS | zenity --text-info --title="USB والأقراص" --width=750 --height=450
+            fi
+            ;;
+        "تقسيم الأقراص")
+            zenity --question --title="تقسيم الأقراص" --text="ستفتح أداة GParted. لا تغيّر الأقسام إلا بعد التأكد من القرص الصحيح. هل تريد المتابعة؟" &&
+                pkexec gparted
+            ;;
+        "النسخ الاحتياطي والاستعادة")
+            if command -v nyroxos-disk-backup >/dev/null 2>&1; then
+                nyroxos-disk-backup
+            else
+                zenity --warning --text="واجهة النسخ الاحتياطي غير موجودة."
+            fi
+            ;;
+        "فحص USB والسعة")
+            check=$(zenity --list --title="فحص USB والسعة" --text="اختر إجراءً" --column="الإجراء" "عرض الأقراص" "تعليمات F3" "إلغاء") || continue
+            case "$check" in
+                "عرض الأقراص")
+                    lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS | zenity --text-info --title="الأقراص المتصلة" --width=850 --height=450
+                    ;;
+                "تعليمات F3")
+                    if command -v f3probe >/dev/null 2>&1; then
+                        f3probe --help 2>&1 | zenity --text-info --title="تعليمات f3probe" --width=750 --height=450 || true
+                    elif command -v f3write >/dev/null 2>&1 && command -v f3read >/dev/null 2>&1; then
+                        (f3write --help 2>&1; f3read --help 2>&1) | zenity --text-info --title="تعليمات F3" --width=750 --height=450 || true
+                    else
+                        zenity --warning --text="أدوات F3 غير متاحة في النظام الحالي."
+                    fi
+                    ;;
+                "إلغاء") ;;
+            esac
+            ;;
+        "فحص أنظمة الملفات")
+            lsblk -o NAME,MODEL,SIZE,TYPE,FSTYPE,MOUNTPOINTS |
+                zenity --text-info --title="الأقسام وأنظمة الملفات" --width=850 --height=450
+            tools=""
+            for tool in fsck fsck.vfat fsck.exfat ntfsfix e2fsck btrfsck xfs_repair fsck.f2fs; do
+                if command -v "$tool" >/dev/null 2>&1; then
+                    tools="${tools}${tool}\n"
+                fi
+            done
+            zenity --info --title="أدوات الفحص المتاحة" --text="الأدوات المكتشفة:\n${tools:-لم تُكتشف أدوات فحص.}\n\nلم يتم تنفيذ أي فحص أو إصلاح."
+            ;;
+        "أدوات PS2 / OPL")
+            if command -v opl >/dev/null 2>&1; then
+                x-terminal-emulator -e opl --help
+            else
+                zenity --warning --text="أداة opl غير مثبتة في النظام الحالي."
+            fi
+            ;;
+        "أدوات صور PS3")
+            zenity --info --title="أدوات PS3" --text="الأوامر المتوقعة: makeps3iso وextractps3iso وpatchps3iso وsplitps3iso. لا تُنفذ تلقائيًا."
+            ;;
+        "أدوات Ventoy")
+            if command -v nyroxos-ventoy-files >/dev/null 2>&1; then
+                x-terminal-emulator -e nyroxos-ventoy-files
+            else
+                zenity --warning --text="ملفات Ventoy غير متاحة في هذا النظام."
+            fi
+            ;;
+        "أدوات MediaTek")
+            if command -v mtkclient-gui >/dev/null 2>&1; then
+                mtkclient-gui
+            else
+                zenity --warning --text="أداة MediaTek غير مثبتة في النظام الحالي."
+            fi
+            ;;
+        "إغلاق") exit 0 ;;
+    esac
+done

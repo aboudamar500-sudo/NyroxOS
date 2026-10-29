@@ -1,0 +1,43 @@
+#!/bin/sh
+set -eu
+
+REV=118a000a83ea31c4f427fe5225abfe964546e05e
+
+apt-get update
+apt-get install -y git ca-certificates python3 python3-venv python3-dev \
+  build-essential libusb-1.0-0 libusb-1.0-0-dev libssl-dev libffi-dev \
+  libbz2-dev liblz4-dev liblzma-dev libsqlite3-dev libreadline-dev \
+  python3-tk tk-dev libxcb-cursor0
+
+git clone --recursive https://github.com/bkerler/mtkclient.git /opt/mtkclient-src
+git -C /opt/mtkclient-src checkout "$REV"
+git -C /opt/mtkclient-src submodule update --init --recursive
+
+python3 -m venv /opt/mtkclient-venv
+/opt/mtkclient-venv/bin/pip install --upgrade pip wheel
+/opt/mtkclient-venv/bin/pip install /opt/mtkclient-src
+
+test -x /opt/mtkclient-venv/bin/mtk
+test -x /opt/mtkclient-venv/bin/mtk_gui
+install -d /etc/udev/rules.d
+if ls /opt/mtkclient-src/Setup/Linux/*.rules >/dev/null 2>&1; then
+  cp /opt/mtkclient-src/Setup/Linux/*.rules /etc/udev/rules.d/
+else
+  echo "ERROR: MTKClient USB rules are missing" >&2
+  exit 1
+fi
+
+cat > /usr/local/bin/mtkclient <<'WRAPPER'
+#!/bin/sh
+exec /opt/mtkclient-venv/bin/mtk "$@"
+WRAPPER
+chmod 0755 /usr/local/bin/mtkclient
+cat > /usr/local/bin/mtkclient-gui <<'WRAPPER'
+#!/bin/sh
+exec /opt/mtkclient-venv/bin/mtk_gui "$@"
+WRAPPER
+chmod 0755 /usr/local/bin/mtkclient-gui
+
+/opt/mtkclient-venv/bin/mtk --help >/dev/null
+apt-get clean
+rm -rf /var/lib/apt/lists/*

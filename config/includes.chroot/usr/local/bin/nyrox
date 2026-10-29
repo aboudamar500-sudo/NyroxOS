@@ -1,0 +1,70 @@
+#!/bin/sh
+set -eu
+
+case "${1:-help}" in
+  help)
+    echo "Nyrox Terminal"
+    echo "  nyrox info             System information"
+    echo "  nyrox doctor           Check development tools"
+    echo "  nyrox search NAME      Search Debian packages"
+    echo "  nyrox install NAME     Install Debian packages"
+    echo "  nyrox update           Refresh Debian package lists"
+    echo "  nyrox venv NAME        Create a Python virtual environment"
+    ;;
+  info)
+    echo "NyroxOS Terminal"
+    uname -srmo
+    python3 --version 2>/dev/null || true
+    ;;
+  doctor)
+    for tool in bash git python3 pip3 adb fastboot mtkclient apktool heimdall; do
+      if command -v "$tool" >/dev/null 2>&1; then
+        printf '[ OK ] %s: %s\n' "$tool" "$(command -v "$tool")"
+      else
+        printf '[ MISSING ] %s\n' "$tool"
+      fi
+    done
+    ;;
+  search)
+    [ "$#" -eq 2 ] || { echo "Usage: nyrox search PACKAGE"; exit 2; }
+    apt-cache search -- "$2"
+    ;;
+  install)
+    [ "$#" -ge 2 ] || { echo "Usage: nyrox install PACKAGE..."; exit 2; }
+    shift
+    if [ "$(id -u)" -eq 0 ]; then
+      apt-get install "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+      sudo apt-get install "$@"
+    else
+      echo "Administrator privileges are required." >&2
+      exit 1
+    fi
+    ;;
+  update)
+    if [ "$(id -u)" -eq 0 ]; then
+      apt-get update
+    elif command -v sudo >/dev/null 2>&1; then
+      sudo apt-get update
+    else
+      echo "Administrator privileges are required." >&2
+      exit 1
+    fi
+    ;;
+  venv)
+    [ "$#" -eq 2 ] || { echo "Usage: nyrox venv NAME"; exit 2; }
+    case "$2" in
+      ""|*[!a-zA-Z0-9_.-]*)
+        echo "Use a simple environment name." >&2
+        exit 2
+        ;;
+    esac
+    python3 -m venv "$HOME/.venvs/$2"
+    echo "Activate with: . \$HOME/.venvs/$2/bin/activate"
+    ;;
+  *)
+    echo "Unknown command: $1"
+    echo "Run 'nyrox help'."
+    exit 2
+    ;;
+esac

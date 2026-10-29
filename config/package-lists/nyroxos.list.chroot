@@ -4,12 +4,9 @@ systemd-sysv
 zram-tools
 lxqt
 sddm
-plymouth
-plymouth-themes
 network-manager
 sudo
 dbus-x11
-firefox-esr
 fonts-noto-core
 fonts-noto-color-emoji
 
@@ -25,7 +22,6 @@ fonts-vazirmatn
 locales
 keyboard-configuration
 xkb-data
-firefox-esr-l10n-ar
 hunspell-ar
 libfm-qt-l10n
 pcmanfm-qt-l10n
@@ -52,23 +48,169 @@ firmware-atheros
 
 firmware-mediatek
 
-# KDE Discover App Store
-plasma-discover
-plasma-discover-backend-flatpak
-flatpak
 
 # Official LXQt Application Launcher
 lxqt-runner
 
 # Official KDE Applications
-dolphin
-konsole
-ark
-okular
-kcalc
 kate
-gwenview
-plasma-systemmonitor
-kdeconnect
 
-# KDE Plasma Desktop Session
+# Android device maintenance and flashing
+adb
+fastboot
+android-udev-rules
+apktool
+heimdall-flash
+android-sdk-libsparse-utils
+android-sdk-platform-tools-common
+usbutils
+libusb-1.0-0
+libusb-1.0-0-dev
+python3
+python3-pip
+python3-venv
+python3-dev
+python3-serial
+python3-usb
+git
+curl
+ca-certificates
+build-essential
+libssl-dev
+libffi-dev
+liblz4-dev
+liblzma-dev
+libbz2-dev
+libsqlite3-dev
+libreadline-dev
+python3-tk
+device-tree-compiler
+binwalk
+lz4
+zstd
+7zip
+unzip
+zip
+parted
+gdisk
+e2fsprogs
+testdisk
+minicom
+picocom
+nano
+less
+
+# Hardware diagnostics and system inspection
+htop
+btop
+inxi
+pciutils
+lshw
+dmidecode
+lsof
+strace
+sysstat
+smartmontools
+nvme-cli
+hdparm
+ethtool
+rfkill
+iw
+file
+
+# Archives, document formats and compression
+cpio
+xz-utils
+bzip2
+gzip
+lzop
+cabextract
+unar
+poppler-utils
+jq
+libimage-exiftool-perl
+mediainfo
+ffmpeg
+
+# Disk recovery and filesystems
+gparted
+gddrescue
+foremost
+sleuthkit
+dosfstools
+ntfs-3g
+btrfs-progs
+xfsprogs
+f2fs-tools
+erofs-utils
+cryptsetup
+lvm2
+
+# Android image and boot image tools
+abootimg
+mkbootimg
+android-sdk-build-tools
+scrcpy
+
+# Device communication and networking
+libimobiledevice-utils
+ifuse
+nmap
+tcpdump
+traceroute
+dnsutils
+whois
+iperf3
+openssh-client
+rsync
+
+# Development and debugging
+clang
+cmake
+ninja-build
+meson
+g++
+make
+pkg-config
+gdb
+valgrind
+python3-construct
+python3-pycryptodome
+python3-cryptography
+python3-protobuf
+python3-requests
+python3-yaml
+pv
+usbview
+hardinfo
+tk-dev
+android-file-transfer
+mtp-tools
+pkexec
+lxqt-policykit
+lxqt-policykit-l10n
+polkitd
+gammu
+gammu-doc
+gnokii
+gammu-smsd
+xxd
+srecord
+gnome-disk-utility
+partclone
+xorriso
+genisoimage
+mtools
+exfatprogs
+wimtools
+libcdio-utils
+cdrdao
+dvd+rw-tools
+cdrskin
+wodim
+util-linux
+udev
+zenity
+python3-pil
+f3
+p7zip-full

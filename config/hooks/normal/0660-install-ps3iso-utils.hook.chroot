@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+REV=878090980a9042c61901920fed1b034af215e8c7
+SRC=/opt/nyroxos-ps3iso-utils
+apt-get update
+apt-get install -y git ca-certificates build-essential
+git clone https://github.com/bucanero/ps3iso-utils.git "$SRC"
+git -C "$SRC" checkout "$REV"
+for tool in makeps3iso extractps3iso patchps3iso splitps3iso; do
+  make -C "$SRC/$tool"
+  test -x "$SRC/$tool/$tool"
+  install -m 0755 "$SRC/$tool/$tool" "/usr/local/bin/$tool"
+done
+make -C "$SRC/makeps3iso" clean
+make -C "$SRC/extractps3iso" clean
+make -C "$SRC/patchps3iso" clean
+make -C "$SRC/splitps3iso" clean
+for tool in makeps3iso extractps3iso patchps3iso splitps3iso; do
+  test -x "/usr/local/bin/$tool"
+done
+apt-get clean
+rm -rf /var/lib/apt/lists/*

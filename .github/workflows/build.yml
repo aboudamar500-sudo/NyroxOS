@@ -50,11 +50,13 @@ jobs:
                 --mirror-chroot-security https://security.debian.org/debian-security/ \
                 --mirror-binary-security https://security.debian.org/debian-security/ \
                 --debian-installer none \
-                --bootappend-live "boot=live components persistence noautologin quiet splash"
+                --bootappend-live "boot=live components persistence username=user"
 
               lb build
+              test -s binary/live/filesystem.squashfs
+              unsquashfs -ll binary/live/filesystem.squashfs | grep -q 'usr/local/bin/nyrox'
+              echo 'Nyrox Terminal verified inside filesystem.squashfs'
             '
-
       - name: Verify ISO output
         run: |
           ls -lh live-image-amd64.iso

@@ -1,0 +1,29 @@
+#!/bin/sh
+set -eu
+VERSION=1.1.18
+SHA256=d86ff9de63d94c8b8f1f6b14d23c55af4b88e8207bf2893890892a6a97b1ad54
+ARCHIVE="ventoy-${VERSION}-linux.tar.gz"
+URL="https://github.com/ventoy/Ventoy/releases/download/v${VERSION}/${ARCHIVE}"
+apt-get update
+apt-get install -y ca-certificates curl gzip coreutils
+mkdir -p /opt/ventoy-download
+cd /opt/ventoy-download
+curl -fL --retry 3 "$URL" -o "$ARCHIVE"
+echo "$SHA256  $ARCHIVE" | sha256sum -c -
+tar -xzf "$ARCHIVE"
+test -d "ventoy-${VERSION}"
+install -d /opt/ventoy
+cp -a "ventoy-${VERSION}/." /opt/ventoy/
+cat > /usr/local/bin/nyroxos-ventoy-files <<'WRAPPER'
+#!/bin/sh
+set -eu
+echo "Ventoy files are installed in /opt/ventoy."
+echo "No USB device has been modified."
+echo "Read /opt/ventoy/README before manually installing Ventoy to a selected USB drive."
+exec ls -la /opt/ventoy
+WRAPPER
+chmod 0755 /usr/local/bin/nyroxos-ventoy-files
+test -x /usr/local/bin/nyroxos-ventoy-files
+rm -rf /opt/ventoy-download
+apt-get clean
+rm -rf /var/lib/apt/lists/*
