@@ -41,6 +41,7 @@ jobs:
               lb config \
                 --mode debian \
                 --distribution trixie \
+                --backports true \
                 --architectures amd64 \
                 --binary-images iso-hybrid \
                 --archive-areas "main contrib non-free-firmware" \

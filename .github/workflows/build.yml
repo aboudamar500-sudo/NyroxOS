@@ -41,6 +41,7 @@ jobs:
               lb config \
                 --mode debian \
                 --distribution trixie \
+                --backports true \
                 --architectures amd64 \
                 --binary-images iso \
                 --archive-areas "main contrib non-free-firmware" \
@@ -69,11 +70,11 @@ jobs:
           mkdir release-files
           split -b 1900M -d -a 3 live-image-amd64.iso release-files/NyroxOS.iso.part-
           sha256sum release-files/* > release-files/SHA256SUMS
-          echo "tag=nyroxos-test-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "tag=nyroxos-build-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
-      - name: Publish test release
+      - name: Publish NyroxOS Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "${{ steps.release.outputs.tag }}" release-files/* --repo "$GITHUB_REPOSITORY" --title "NyroxOS Test $GITHUB_RUN_NUMBER" --notes "Automated test build. Download all ISO parts and SHA256SUMS, then join the parts in filename order before using the ISO."
+          gh release create "${{ steps.release.outputs.tag }}" release-files/* --repo "$GITHUB_REPOSITORY" --title "NyroxOS Build $GITHUB_RUN_NUMBER" --notes "Automated NyroxOS build. Download all ISO parts and SHA256SUMS, then join the parts in filename order before using the ISO."
