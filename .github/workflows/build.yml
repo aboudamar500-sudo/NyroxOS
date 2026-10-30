@@ -55,8 +55,19 @@ jobs:
 
               lb build
               test -s binary/live/filesystem.squashfs
-              unsquashfs -ll binary/live/filesystem.squashfs | grep -q 'usr/local/bin/nyrox'
-              echo 'Nyrox Terminal verified inside filesystem.squashfs'
+              unsquashfs -ll binary/live/filesystem.squashfs > /tmp/nyrox-files.txt
+              for item in \
+                usr/local/bin/nyrox \
+                usr/local/bin/nyroxos-ventoy-manager \
+                usr/local/bin/nyroxos-external-disk-check \
+                usr/local/bin/nyroxos-iso-usb-check \
+                usr/local/sbin/nyroxos-ventoy-action \
+                opt/ventoy/Ventoy2Disk.sh \
+                opt/ventoy/boot/boot.img \
+                opt/ventoy/tool/ventoy_lib.sh; do
+                grep -Fq "$item" /tmp/nyrox-files.txt || { echo "Missing: $item"; exit 1; }
+              done
+              echo 'NyroxOS and Ventoy files verified inside filesystem.squashfs'
             '
       - name: Verify ISO output
         run: |

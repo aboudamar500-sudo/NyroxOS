@@ -1,6 +1,7 @@
 linux-image-amd64
 systemd
 systemd-sysv
+bash
 zram-tools
 lxqt
 sddm

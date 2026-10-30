@@ -79,8 +79,8 @@ while true; do
             zenity --info --title="أدوات PS3" --text="الأوامر المتوقعة: makeps3iso وextractps3iso وpatchps3iso وsplitps3iso. لا تُنفذ تلقائيًا."
             ;;
         "أدوات Ventoy")
-            if command -v nyroxos-ventoy-files >/dev/null 2>&1; then
-                x-terminal-emulator -e nyroxos-ventoy-files
+            if command -v nyroxos-ventoy-manager >/dev/null 2>&1; then
+                nyroxos-ventoy-manager
             else
                 zenity --warning --text="ملفات Ventoy غير متاحة في هذا النظام."
             fi

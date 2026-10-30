@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 VERSION=1.1.18
-SHA256=d86ff9de63d94c8b8f1f6b14d23c55af4b88e8207bf2893890892a6a97b1ad54
+SHA256=d86ff9de63d94c8b8f1f6b14d23c55af4b88e8207bf2890892a6a97b1ad54
 ARCHIVE="ventoy-${VERSION}-linux.tar.gz"
 URL="https://github.com/ventoy/Ventoy/releases/download/v${VERSION}/${ARCHIVE}"
 apt-get update

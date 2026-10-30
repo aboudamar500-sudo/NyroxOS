@@ -1,0 +1,134 @@
+#!/bin/sh
+set -eu
+
+VTOY=/opt/ventoy/Ventoy2Disk.sh
+
+error() { zenity --error --title="مدير Ventoy" --text="$1"; }
+info() { zenity --info --title="مدير Ventoy" --text="$1"; }
+
+while true; do
+    action=$(zenity --list --title="مدير Ventoy — NyroxOS" \
+        --text="اختر العملية" --column="العملية" \
+        "عرض الأقراص" \
+        "إدارة ملفات ISO" \
+        "تثبيت Ventoy على USB" \
+        "تحديث Ventoy على USB" \
+        "عرض ملفات أداة Ventoy" \
+        "إغلاق" --width=520 --height=360) || exit 0
+
+    case "$action" in
+        "عرض الأقراص")
+            lsblk -o NAME,MODEL,SIZE,TYPE,TRAN,RM,FSTYPE,MOUNTPOINTS |
+                zenity --text-info --title="الأقراص المتصلة" --width=900 --height=480
+            ;;
+        "إدارة ملفات ISO")
+            method=$(zenity --list --title="طريقة إدارة ISO" \
+                --text="اختر الطريقة" --column="الطريقة" \
+                "نسخ ملف ISO إلى مجلد USB" \
+                "فتح مجلد ملفات ISO" \
+                "اختيار مجلد ISO" --width=520 --height=300) || continue
+            case "$method" in
+                "نسخ ملف ISO إلى مجلد USB")
+                    src=$(zenity --file-selection --title="اختر ملف ISO") || continue
+                    [ -f "$src" ] || continue
+                    case "$src" in *.iso|*.ISO) ;; *) error "اختر ملف ISO."; continue ;; esac
+                    dest=$(zenity --file-selection --directory --title="اختر مجلد USB") || continue
+                    [ -d "$dest" ] || continue
+                    CHECK=/usr/local/bin/nyroxos-iso-usb-check
+                    if [ ! -x "$CHECK" ]; then
+                        error "أداة فحص USB غير موجودة."
+                        continue
+                    fi
+                    if ! "$CHECK" "$dest"; then
+                        error "رُفض النسخ لأن التحقق من USB الخارجي لم ينجح."
+                        continue
+                    fi
+                    target="$dest/$(basename "$src")"
+                    [ ! -e "$target" ] || { error "الملف موجود مسبقًا ولن يتم استبداله."; continue; }
+                    zenity --question --text="سيتم نسخ:\n$src\nإلى:\n$target\nمتابعة؟" || continue
+                    if cp -- "$src" "$target" && sync; then
+                        if command -v sha256sum >/dev/null 2>&1; then
+                            a=$(sha256sum "$src" | awk '{print $1}')
+                            b=$(sha256sum "$target" | awk '{print $1}')
+                            [ "$a" = "$b" ] && info "اكتمل النسخ والتحقق من SHA-256." || error "البصمتان مختلفتان؛ تحقق من النسخة."
+                        else info "اكتمل النسخ، لكن تعذر التحقق من SHA-256."; fi
+                    else error "فشل النسخ."; fi
+                    ;;
+                "فتح مجلد ملفات ISO"|"اختيار مجلد ISO")
+                    dir=$(zenity --file-selection --directory --title="اختر مجلد ملفات ISO") || continue
+                    [ -d "$dir" ] || continue
+                    if command -v xdg-open >/dev/null 2>&1; then xdg-open "$dir" >/dev/null 2>&1 &
+                    else error "لا يتوفر xdg-open."; fi
+                    ;;
+            esac
+            ;;
+        "تثبيت Ventoy على USB"|"تحديث Ventoy على USB")
+            case "$action" in
+                "تثبيت Ventoy على USB") operation=install ;;
+                *) operation=update ;;
+            esac
+
+            ACTION_TOOL=/usr/local/sbin/nyroxos-ventoy-action
+            if [ ! -x "$ACTION_TOOL" ] || ! command -v qterminal >/dev/null 2>&1 || ! command -v pkexec >/dev/null 2>&1; then
+                error "أداة التنفيذ أو qterminal أو pkexec غير متاحة."
+                continue
+            fi
+
+            tmp=$(mktemp) || { error "تعذر إنشاء ملف مؤقت."; continue; }
+            lsblk -dnro PATH,TRAN,TYPE,SIZE |
+            while read -r dev tran type size; do
+                [ "$tran" = usb ] && [ "$type" = disk ] || continue
+                printf '%s\t%s\n' "$dev" "$size" >> "$tmp"
+            done
+
+            set --
+            while IFS="$(printf '\t')" read -r dev size; do
+                [ -n "$dev" ] && set -- "$@" "$dev" "$size"
+            done < "$tmp"
+            rm -f "$tmp"
+
+            if [ "$#" -eq 0 ]; then
+                error "لم يتم العثور على أقراص USB كاملة."
+                continue
+            fi
+
+            disk=$(zenity --list --title="اختيار قرص USB" \
+                --text="اختر القرص الصحيح. ستظهر تفاصيله قبل التأكيد." \
+                --column="مسار الجهاز" --column="الحجم" \
+                --print-column=1 "$@" --width=650 --height=400) || continue
+
+            model=$(lsblk -dnro MODEL "$disk" 2>/dev/null || true)
+            size=$(lsblk -dnro SIZE "$disk" 2>/dev/null || true)
+            [ -n "$model" ] || model="غير معروف"
+
+            if [ "$operation" = install ]; then
+                warning="تحذير: تثبيت Ventoy سيمسح جميع بيانات القرص."
+            else
+                warning="سيتم تحديث Ventoy. تحقق من النسخ الاحتياطي قبل المتابعة."
+            fi
+
+            zenity --question --title="تأكيد عملية Ventoy" \
+                --width=500 \
+                --text="$warning\n\nالجهاز: $disk\nالطراز: $model\nالحجم: $size\n\nهل تريد المتابعة؟" || continue
+
+            if ! qterminal -e sh -c '
+                pkexec "$1" "$2" "$3"
+                result=$?
+                printf "\nرمز انتهاء العملية: %s\nاضغط Enter لإغلاق النافذة." "$result"
+                read -r answer
+                exit "$result"
+            ' sh "$ACTION_TOOL" "$operation" "$disk"; then
+                error "تعذر فتح الطرفية أو تشغيل أداة Ventoy."
+            fi
+            ;;
+
+        "عرض ملفات أداة Ventoy")
+            if [ -x "$VTOY" ]; then
+                ls -la /opt/ventoy | zenity --text-info --title="ملفات أداة Ventoy" --width=700 --height=450
+            else
+                error "ملف Ventoy2Disk.sh غير موجود."
+            fi
+            ;;
+        "إغلاق") exit 0 ;;
+    esac
+done

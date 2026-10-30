@@ -1,0 +1,67 @@
+#!/bin/sh
+set -eu
+
+fail() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+[ "$(id -u)" -eq 0 ] || fail "يجب تشغيل الأداة عبر pkexec."
+[ "$#" -eq 2 ] || fail "صيغة الاستخدام غير صحيحة."
+
+action=$1
+requested_disk=$2
+
+case "$action" in
+    install) flag=-i ;;
+    update)  flag=-u ;;
+    *) fail "عملية غير مسموحة." ;;
+esac
+
+CHECK=/usr/local/bin/nyroxos-external-disk-check
+VTOY=/opt/ventoy/Ventoy2Disk.sh
+
+[ -x "$CHECK" ] || fail "أداة فحص USB غير موجودة."
+[ -x "$VTOY" ] || fail "Ventoy2Disk.sh غير موجود."
+[ -f /opt/ventoy/boot/boot.img ] || fail "ملفات إقلاع Ventoy ناقصة."
+[ -f /opt/ventoy/tool/ventoy_lib.sh ] || fail "مكتبة Ventoy غير موجودة."
+[ -d /opt/ventoy/tool/x86_64 ] || fail "أدوات Ventoy لمعمارية x86_64 غير موجودة."
+
+disk=$(readlink -f "$requested_disk") || fail "تعذر تحديد القرص."
+[ -b "$disk" ] || fail "القرص غير موجود."
+
+"$CHECK" "$disk" || fail "رفض فحص الحماية القرص."
+[ "$(lsblk -dnro TYPE "$disk" | tr -d ' ')" = disk ] || fail "يجب تحديد قرص كامل."
+
+cd /opt/ventoy
+
+if ./Ventoy2Disk.sh -l "$disk" >/dev/null 2>&1; then
+    has_ventoy=yes
+else
+    has_ventoy=no
+fi
+
+if [ "$action" = install ]; then
+    [ "$has_ventoy" = no ] || fail "القرص يحتوي Ventoy بالفعل؛ استخدم التحديث."
+
+    children=$(lsblk -nrpo NAME "$disk" | sed '1d')
+    [ -z "$children" ] || fail "القرص يحتوي أقسامًا؛ لن نسمح بالتثبيت فوقها."
+
+    signatures=$(wipefs -n "$disk" 2>/dev/null || true)
+    [ -z "$signatures" ] || fail "عُثر على توقيعات تخزين؛ القرص ليس فارغًا بأمان."
+else
+    [ "$has_ventoy" = yes ] || fail "لم نتمكن من إثبات وجود Ventoy سليم؛ رُفض التحديث."
+fi
+
+echo "العملية: $action"
+echo "القرص: $disk"
+echo "إعادة فحص القرص قبل التنفيذ..."
+
+"$CHECK" "$disk" || fail "فشل الفحص النهائي."
+[ -b "$disk" ] || fail "اختفى القرص."
+[ "$(lsblk -dnro TYPE "$disk" | tr -d ' ')" = disk ] || fail "تغير نوع الجهاز."
+
+./Ventoy2Disk.sh "$flag" "$disk" || fail "فشلت عملية Ventoy أو أُلغيَت."
+
+sync
+echo "اكتملت العملية بنجاح."

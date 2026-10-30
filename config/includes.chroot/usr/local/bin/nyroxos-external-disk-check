@@ -1,0 +1,61 @@
+#!/bin/sh
+set -eu
+
+dev=${1:-}
+
+fail() {
+    printf 'مرفوض: %s\n' "$*" >&2
+    exit 1
+}
+
+[ "$(id -u)" -eq 0 ] || fail "يلزم تشغيل الفحص بصلاحيات المسؤول."
+[ -n "$dev" ] || fail "لم يتم تحديد قرص."
+[ -b "$dev" ] || fail "الجهاز المحدد ليس قرصًا موجودًا."
+
+disk=$(readlink -f "$dev") || fail "تعذر تحديد هوية القرص."
+[ -n "$disk" ] || fail "هوية القرص فارغة."
+[ "$(lsblk -dnro TYPE "$disk" | tr -d ' ')" = disk ] ||
+    fail "يجب اختيار قرص كامل."
+
+tran=$(lsblk -dnro TRAN "$disk" | tr -d ' ')
+[ "$tran" = usb ] || fail "لم يثبت أن القرص متصل عبر USB."
+
+# Reject devices that are mounted or contain mounted partitions.
+if lsblk -nrpo MOUNTPOINT "$disk" | grep -q '[^[:space:]]'; then
+    fail "القرص أو أحد أقسامه مركّب."
+fi
+
+# Resolve the root filesystem to its underlying block-device tree.
+root_source=$(findmnt -nro SOURCE / 2>/dev/null) ||
+    fail "تعذر تحديد مصدر نظام الملفات الجذر."
+[ -n "$root_source" ] || fail "مصدر نظام الملفات الجذر فارغ."
+
+root_type=$(lsblk -dnro TYPE "$root_source" 2>/dev/null | tr -d ' ' || true)
+case "$root_type" in
+    ""|disk|part) ;;
+    *) fail "مصدر النظام يستخدم طبقة تخزين خاصة؛ يلزم فحص يدوي قبل السماح بالكتابة." ;;
+esac
+
+root_real=$(readlink -f "$root_source" 2>/dev/null || true)
+[ -n "$root_real" ] || fail "تعذر تتبع مصدر النظام."
+
+# Refuse if the selected disk is the root device or an ancestor of it.
+[ "$disk" != "$root_real" ] || fail "القرص المحدد هو مصدر النظام."
+
+root_tree=$(lsblk -s -nrpo NAME "$root_real" 2>/dev/null) ||
+    fail "تعذر تتبع شجرة جهاز النظام."
+[ -n "$root_tree" ] || fail "شجرة جهاز النظام فارغة."
+
+printf '%s\n' "$root_tree" |
+while IFS= read -r ancestor; do
+    [ -n "$ancestor" ] || continue
+    ancestor_real=$(readlink -f "$ancestor" 2>/dev/null || true)
+    [ -n "$ancestor_real" ] || exit 20
+    [ "$ancestor_real" != "$disk" ] || exit 21
+done
+status=$?
+[ "$status" -eq 0 ] || fail "تعذر استبعاد قرص النظام أو أحد أصوله بأمان."
+
+printf '%s\n' "اجتاز القرص الفحوص الأولية فقط."
+printf 'الجهاز: %s\n' "$disk"
+printf '%s\n' "هذا ليس تصريحًا نهائيًا للكتابة؛ يجب إعادة التحقق مباشرة قبل التنفيذ."
