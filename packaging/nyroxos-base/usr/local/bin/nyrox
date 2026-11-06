@@ -1,0 +1,45 @@
+#!/bin/sh
+set -eu
+
+case "${1:-help}" in
+  help)
+    echo "NyroxOS System Manager"
+    echo "  nyrox info          System information"
+    echo "  nyrox search NAME   Search Debian packages"
+    echo "  nyrox install NAME  Install packages"
+    echo "  nyrox update        Refresh package lists"
+    ;;
+  info)
+    echo "NyroxOS"
+    uname -srmo
+    if [ -r /etc/os-release ]; then
+      . /etc/os-release
+      echo "${PRETTY_NAME:-Linux}"
+    fi
+    ;;
+  search)
+    [ "$#" -eq 2 ] || { echo "Usage: nyrox search PACKAGE"; exit 2; }
+    apt-cache search -- "$2"
+    ;;
+  install)
+    [ "$#" -ge 2 ] || { echo "Usage: nyrox install PACKAGE..."; exit 2; }
+    shift
+    if [ "$(id -u)" -eq 0 ]; then
+      apt-get install "$@"
+    else
+      sudo apt-get install "$@"
+    fi
+    ;;
+  update)
+    if [ "$(id -u)" -eq 0 ]; then
+      apt-get update
+    else
+      sudo apt-get update
+    fi
+    ;;
+  *)
+    echo "Unknown command: $1"
+    echo "Run 'nyrox help'."
+    exit 2
+    ;;
+esac

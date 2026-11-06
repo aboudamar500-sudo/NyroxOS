@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+ENGINE=/usr/bin/nyroxos-update-engine
+if ! command -v zenity >/dev/null 2>&1; then
+    exec "$ENGINE" --check
+fi
+if ! result=$("$ENGINE" --check 2>&1); then
+    zenity --error --title="NyroxOS Update Manager" --text="$result"
+    exit 1
+fi
+zenity --info --title="NyroxOS Update Manager" --text="حالة التحديث:\n\n$result"
+if zenity --question --title="NyroxOS Update Manager" --text="هل تريد تنزيل التحديث والتحقق منه وتثبيته الآن؟"; then
+    log=$(mktemp)
+    if pkexec "$ENGINE" --install >"$log" 2>&1; then
+        zenity --info --title="NyroxOS Update Manager" --text="$(cat "$log")"
+    else
+        zenity --error --title="فشل التحديث" --text="$(cat "$log")"
+        rm -f "$log"
+        exit 1
+    fi
+    rm -f "$log"
+fi

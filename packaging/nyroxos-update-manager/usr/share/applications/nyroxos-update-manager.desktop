@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NyroxOS Update Manager
+Comment=Verify and install NyroxOS updates
+Exec=nyroxos-update-manager
+Icon=system-software-update
+Terminal=false
+Categories=System;Settings;

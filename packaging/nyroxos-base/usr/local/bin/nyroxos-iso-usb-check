@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+dir=${1:-}
+[ -n "$dir" ] && [ -d "$dir" ] || {
+    zenity --error --text="اختر مجلدًا موجودًا."
+    exit 1
+}
+
+dir=$(readlink -f -- "$dir") || exit 1
+mountpoint=$(findmnt -nro TARGET -T "$dir" 2>/dev/null) || {
+    zenity --error --text="تعذر تحديد نظام الملفات."
+    exit 1
+}
+source=$(findmnt -nro SOURCE -T "$dir" 2>/dev/null) || exit 1
+source=$(readlink -f -- "$source" 2>/dev/null || printf '%s' "$source")
+
+[ -n "$mountpoint" ] && [ -n "$source" ] || exit 1
+
+case "$source" in
+    /dev/*) ;;
+    *) zenity --error --text="لم يثبت أن المجلد موجود على قرص USB خارجي."; exit 1 ;;
+esac
+
+device=$(lsblk -s -nrpo NAME,TRAN "$source" 2>/dev/null |
+    awk '$2=="usb" {print $1; found=1} END {if (!found) exit 1}') || {
+    zenity --error --text="تعذر إثبات اتصال القرص عبر USB."
+    exit 1
+}
+
+zenity --info --text="اجتاز المجلد فحص USB الأولي.\nالمجلد: $dir\nنقطة التركيب: $mountpoint\nالمصدر: $source\n\nهذا فحص أولي فقط، وليس تصريحًا بكتابة ملفات."

@@ -1,0 +1,9 @@
+Package: nyroxos-base
+Version: 1.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: util-linux, zenity
+Maintainer: NyroxOS Team
+Description: Core utilities for NyroxOS
+ Core command-line and disk verification utilities.

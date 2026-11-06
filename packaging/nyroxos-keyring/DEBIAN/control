@@ -1,0 +1,7 @@
+Package: nyroxos-keyring
+Version: 1.0.0
+Section: misc
+Priority: optional
+Architecture: all
+Maintainer: NyroxOS Team
+Description: Trusted signing keys for NyroxOS updates

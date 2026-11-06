@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+import sys, os, json, hashlib, base64, urllib.request, subprocess
+from pathlib import Path
+from cryptography.hazmat.primitives import serialization
+from cryptography.exceptions import InvalidSignature
+
+REPO = "aboudamar500-sudo/NyroxOS"
+API = f"https://api.github.com/repos/{REPO}/releases/latest"
+KEY = "/usr/share/nyroxos/keys/update-ed25519-public.pem"
+FINGERPRINT = "/usr/share/nyroxos/keys/fingerprint.sha256"
+CACHE = Path("/var/cache/nyroxos-updates")
+MAX_MANIFEST = 1024 * 1024
+
+def fail(message):
+    print("ERROR:", message, file=sys.stderr)
+    sys.exit(1)
+
+def request(url, limit=None):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "NyroxOS-Update-Manager/1.0",
+        "Accept": "application/vnd.github+json"
+    })
+    with urllib.request.urlopen(req, timeout=40) as response:
+        data = response.read((limit or 2**31) + 1)
+    if limit and len(data) > limit:
+        fail("حجم البيانات أكبر من الحد المسموح.")
+    return data
+
+def usb_fingerprint():
+    expected = Path(FINGERPRINT).read_text().strip()
+    roots = [Path("/media"), Path("/run/media"), Path("/mnt")]
+    for root in roots:
+        if not root.exists():
+            continue
+        for current, dirs, files in os.walk(root):
+            depth = len(Path(current).relative_to(root).parts)
+            dirs[:] = dirs[:20] if depth < 3 else []
+            if "NYROX.FINGERPRINT" not in files:
+                continue
+            candidate = Path(current) / "NYROX.FINGERPRINT"
+            try:
+                source = subprocess.check_output(
+                    ["findmnt", "-nro", "SOURCE", "-T", str(candidate)],
+                    text=True, stderr=subprocess.DEVNULL).strip()
+                transports = subprocess.check_output(
+                    ["lsblk", "-s", "-nrpo", "TRAN", source],
+                    text=True, stderr=subprocess.DEVNULL).split()
+                if "usb" not in transports:
+                    continue
+                actual = hashlib.sha256(candidate.read_bytes().strip()).hexdigest()
+                if actual == expected:
+                    return str(candidate)
+            except Exception:
+                continue
+    fail("لم يتم العثور على بصمة USB موثوقة أو أنها غير مطابقة.")
+
+def get_release():
+    release = json.loads(request(API, 2 * 1024 * 1024))
+    if release.get("draft") or release.get("prerelease"):
+        fail("الإصدار غير معتمد للتحديث العام.")
+    assets = {a["name"]: a for a in release.get("assets", [])}
+    if "manifest.json" not in assets or "manifest.json.sig" not in assets:
+        fail("الإصدار لا يحتوي على manifest وتوقيعه.")
+    raw = request(assets["manifest.json"]["browser_download_url"], MAX_MANIFEST)
+    signature = base64.b64decode(
+        request(assets["manifest.json.sig"]["browser_download_url"], 4096).strip(),
+        validate=True)
+    public_key = serialization.load_pem_public_key(Path(KEY).read_bytes())
+    try:
+        public_key.verify(signature, raw)
+    except InvalidSignature:
+        fail("التوقيع الرقمي غير صحيح؛ تم رفض التحديث.")
+    manifest = json.loads(raw)
+    if not isinstance(manifest.get("packages"), list) or not manifest["packages"]:
+        fail("قائمة الحزم في manifest غير صالحة.")
+    return release, manifest, assets
+
+def verify_and_download(manifest, assets):
+    usb_fingerprint()
+    CACHE.mkdir(parents=True, exist_ok=True)
+    downloaded = []
+    for package in manifest["packages"]:
+        name = package.get("name", "")
+        digest = package.get("sha256", "")
+        if not name.endswith(".deb") or "/" in name or len(digest) != 64:
+            fail("بيانات حزمة غير صالحة.")
+        asset = assets.get(name)
+        if not asset:
+            fail("الحزمة غير موجودة في الإصدار: " + name)
+        data = request(asset["browser_download_url"])
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != digest.lower():
+            fail("فشل فحص SHA-256 للحزمة: " + name)
+        target = CACHE / name
+        target.write_bytes(data)
+        downloaded.append(str(target))
+        print("VERIFIED:", name)
+    return downloaded
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in ("--check", "--download", "--install"):
+        fail("الاستخدام: nyroxos-update-engine --check | --download | --install")
+    action = sys.argv[1]
+    release, manifest, assets = get_release()
+    print("الإصدار:", manifest.get("version", release["tag_name"]))
+    if action == "--check":
+        print("التوقيع الرقمي صحيح.")
+        print("عدد الحزم:", len(manifest["packages"]))
+        return
+    if action == "--download":
+        usb_fingerprint()
+        files = verify_and_download(manifest, assets)
+        print("تم تنزيل والتحقق من", len(files), "حزمة.")
+        return
+    if os.geteuid() != 0:
+        fail("التثبيت يتطلب صلاحيات المسؤول.")
+    files = verify_and_download(manifest, assets)
+    subprocess.run(["apt-get", "install", "-y", *files], check=True)
+    print("اكتمل تثبيت التحديث.")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        fail(str(exc))
