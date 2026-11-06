@@ -9,10 +9,13 @@ if ! result=$("$ENGINE" --check 2>&1); then
     exit 1
 fi
 zenity --info --title="NyroxOS Update Manager" --text="حالة التحديث:\n\n$result"
-if zenity --question --title="NyroxOS Update Manager" --text="هل تريد تنزيل التحديث والتحقق منه وتثبيته الآن؟"; then
+if zenity --question --title="NyroxOS Update Manager" --text="هل تريد تنزيل التحديث والتحقق منه وتجهيزه للتطبيق عند إعادة التشغيل؟"; then
     log=$(mktemp)
-    if pkexec "$ENGINE" --install >"$log" 2>&1; then
+    if pkexec "$ENGINE" --stage >"$log" 2>&1; then
         zenity --info --title="NyroxOS Update Manager" --text="$(cat "$log")"
+        if zenity --question --title="إعادة التشغيل" --text="تم تجهيز التحديث. هل تريد إعادة تشغيل النظام لتطبيقه الآن؟"; then
+            pkexec systemctl reboot
+        fi
     else
         zenity --error --title="فشل التحديث" --text="$(cat "$log")"
         rm -f "$log"

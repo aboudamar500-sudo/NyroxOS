@@ -1,0 +1,13 @@
+[Unit]
+Description=NyroxOS Offline Update Application
+ConditionPathExists=/var/lib/nyroxos-update/pending/manifest.json
+After=local-fs.target
+Before=multi-user.target display-manager.service graphical.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nyroxos-update-engine --apply
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

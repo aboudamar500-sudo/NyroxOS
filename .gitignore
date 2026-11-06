@@ -5,3 +5,4 @@ chroot/
 *.hybrid.iso
 binary/
 *.log
+private/

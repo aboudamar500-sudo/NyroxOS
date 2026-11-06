@@ -74,11 +74,16 @@ jobs:
           ls -lh live-image-amd64.iso
           test -s live-image-amd64.iso
 
+      - name: Build signed update bundle
+        env:
+          NYROX_UPDATE_SIGNING_KEY: ${{ secrets.NYROX_UPDATE_SIGNING_KEY }}
+        run: python3 tools/build-update.py
+
       - name: Prepare release files
         id: release
         run: |
           set -euo pipefail
-          mkdir release-files
+          mkdir -p release-files
           split -b 1900M -d -a 3 live-image-amd64.iso release-files/NyroxOS.iso.part-
           sha256sum release-files/* > release-files/SHA256SUMS
           echo "tag=nyroxos-build-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
