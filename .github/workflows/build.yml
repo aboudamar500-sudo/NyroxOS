@@ -23,6 +23,18 @@ jobs:
           sudo rm -rf /opt/ghc
           df -h /
 
+      - name: Build signed update bundle
+        env:
+          NYROX_UPDATE_SIGNING_KEY: ${{ secrets.NYROX_UPDATE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          rm -rf release-files
+          find packaging -type d -name __pycache__ -prune -exec rm -rf {} +
+          python3 tools/build-update.py
+          rm -f config/packages.chroot/nyroxos-*.deb
+          cp -f release-files/*.deb config/packages.chroot/
+          ls -lh config/packages.chroot/
+
       - name: Build Debian Live ISO
         run: |
           docker run --privileged --rm \
@@ -56,28 +68,32 @@ jobs:
               lb build
               test -s binary/live/filesystem.squashfs
               unsquashfs -ll binary/live/filesystem.squashfs > /tmp/nyrox-files.txt
+
               for item in \
                 usr/local/bin/nyrox \
                 usr/local/bin/nyroxos-external-disk-check \
                 usr/local/bin/nyroxos-iso-usb-check \
                 usr/bin/nyroxos-update-engine \
                 usr/bin/nyroxos-update-manager \
+                etc/nyroxos/update.conf \
                 usr/share/applications/nyroxos-update-manager.desktop \
                 usr/share/nyroxos/keys/update-ed25519-public.pem \
-                usr/share/nyroxos/keys/fingerprint.sha256; do
-                grep -Fq "$item" /tmp/nyrox-files.txt || { echo "Missing: $item"; exit 1; }
+                usr/share/nyroxos/keys/fingerprint.sha256 \
+                usr/lib/systemd/system/nyroxos-update-apply.service \
+                usr/lib/systemd/system/multi-user.target.wants/nyroxos-update-apply.service; do
+                grep -Fq "$item" /tmp/nyrox-files.txt || {
+                  echo "Missing from ISO: $item"
+                  exit 1
+                }
               done
-              echo 'NyroxOS files verified inside filesystem.squashfs'
+
+              echo "NyroxOS packages and update service verified."
             '
+
       - name: Verify ISO output
         run: |
           ls -lh live-image-amd64.iso
           test -s live-image-amd64.iso
-
-      - name: Build signed update bundle
-        env:
-          NYROX_UPDATE_SIGNING_KEY: ${{ secrets.NYROX_UPDATE_SIGNING_KEY }}
-        run: python3 tools/build-update.py
 
       - name: Prepare release files
         id: release
@@ -93,4 +109,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release create "${{ steps.release.outputs.tag }}" release-files/* --repo "$GITHUB_REPOSITORY" --title "NyroxOS Build $GITHUB_RUN_NUMBER" --notes "Automated NyroxOS build. Download all ISO parts and SHA256SUMS, then join the parts in filename order before using the ISO."
+          gh release create "${{ steps.release.outputs.tag }}" release-files/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "NyroxOS Build $GITHUB_RUN_NUMBER" \
+            --notes "Automated NyroxOS build. Download all ISO parts and SHA256SUMS, then join the parts in filename order before using the ISO."
