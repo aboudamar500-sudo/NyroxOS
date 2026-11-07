@@ -4,6 +4,16 @@ ENGINE=/usr/bin/nyroxos-update-engine
 if ! command -v zenity >/dev/null 2>&1; then
     exec "$ENGINE" --check
 fi
+
+if zenity --question --title="NyroxOS ISO" --text="هل تريد تنزيل أحدث نسخة من NyroxOS والتحقق منها؟"; then
+    log=$(mktemp)
+    if "$ENGINE" --iso-download >"$log" 2>&1; then
+        zenity --info --title="اكتمل تنزيل NyroxOS" --text="$(cat "$log")"
+    else
+        zenity --error --title="فشل تنزيل ISO" --text="$(cat "$log")"
+    fi
+    rm -f "$log"
+fi
 if ! result=$("$ENGINE" --check 2>&1); then
     zenity --error --title="NyroxOS Update Manager" --text="$result"
     exit 1

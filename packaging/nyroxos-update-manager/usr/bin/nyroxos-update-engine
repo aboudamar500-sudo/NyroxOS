@@ -131,10 +131,100 @@ def checked_packages(manifest):
             fail("اسم حزمة مكرر في البيان.")
         result[name] = digest.lower()
     return result
+
+def stage(release, manifest, raw, sig, assets):
+    if os.geteuid() != 0:
+        fail("يلزم تشغيل تجهيز التحديث بصلاحيات المسؤول.")
+    if PENDING.exists():
+        fail("يوجد تحديث مجهز مسبقًا.")
+    packages = checked_packages(manifest)
+    WORK.mkdir(parents=True, exist_ok=True)
+    temp = WORK / "pending-new"
+    temp.mkdir(exist_ok=False)
+    try:
+        (temp / "packages").mkdir()
+        for name, digest in packages.items():
+            asset = assets.get(name)
+            if not asset:
+                fail("ملف الحزمة غير موجود: " + name)
+            target = temp / "packages" / name
+            download(asset["browser_download_url"], target)
+            if sha256(target) != digest:
+                fail("فشل التحقق من الحزمة: " + name)
+        (temp / "manifest.json").write_bytes(raw)
+        (temp / "manifest.json.sig").write_bytes(sig)
+        PENDING.parent.mkdir(parents=True, exist_ok=True)
+        temp.rename(PENDING)
+        print("تم التحقق من التحديث وتجهيزه.")
+    except Exception:
+        print("فشل التجهيز؛ ملفات العمل محفوظة في:", temp)
+        raise
+
+
+def iso_download():
+    release, _, _, _, assets = get_release()
+    if "iso-manifest.json" not in assets or "iso-manifest.json.sig" not in assets:
+        fail("بيان ISO الموقّع غير موجود.")
+    raw = request(assets["iso-manifest.json"]["browser_download_url"], MAX_MANIFEST)
+    encoded = request(assets["iso-manifest.json.sig"]["browser_download_url"], 4096)
+    manifest = verify_manifest(raw, base64.b64decode(encoded))
+    size = manifest.get("final_size")
+    digest = manifest.get("final_sha256")
+    if not isinstance(size, int) or not 0 < size <= MAX_DOWNLOAD:
+        fail("حجم ISO غير صالح.")
+    if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest.lower()):
+        fail("بصمة ISO غير صالحة.")
+    downloads = Path.home() / "Downloads"
+    downloads.mkdir(parents=True, exist_ok=True)
+    tag = "".join(c if c.isalnum() or c in "-_" else "_" for c in release["tag_name"])
+    target = downloads / ("NyroxOS-" + tag + ".iso")
+    if target.exists():
+        fail("ملف ISO موجود مسبقًا: " + str(target))
+    work = downloads / (".nyroxos-iso-" + tag)
+    work.mkdir(exist_ok=True)
+    assembled = work / "assembled.iso"
+    try:
+        kind = manifest.get("type")
+        if kind == "parts":
+            parts = manifest.get("parts")
+            if not isinstance(parts, list) or not parts:
+                fail("قائمة أجزاء ISO غير صالحة.")
+            parts = sorted(parts, key=lambda x: x["index"])
+            if [x["index"] for x in parts] != list(range(len(parts))):
+                fail("ترتيب أجزاء ISO غير مكتمل.")
+            with assembled.open("wb") as out:
+                for part in parts:
+                    name = part["name"]
+                    if Path(name).name != name or name not in assets:
+                        fail("ملف جزء غير صالح: " + str(name))
+                    item = work / name
+                    download(assets[name]["browser_download_url"], item)
+                    if item.stat().st_size != part["size"] or sha256(item) != part["sha256"]:
+                        fail("فشل التحقق من الجزء: " + name)
+                    with item.open("rb") as src:
+                        shutil.copyfileobj(src, out)
+        elif kind == "single":
+            name = manifest["name"]
+            if Path(name).name != name or name not in assets:
+                fail("ملف ISO غير موجود.")
+            download(assets[name]["browser_download_url"], assembled)
+            if assembled.stat().st_size != manifest["size"] or sha256(assembled) != manifest["sha256"]:
+                fail("فشل التحقق من ملف ISO.")
+        else:
+            fail("نوع بيان ISO غير مدعوم.")
+        if assembled.stat().st_size != size or sha256(assembled) != digest:
+            fail("فشل التحقق النهائي من ISO.")
+        assembled.replace(target)
+        shutil.rmtree(work)
+        print("تم تنزيل ISO والتحقق منه:")
+        print(target)
+    except Exception:
+        print("فشل التنزيل؛ ملفات العمل محفوظة في:", work)
+        raise
+
 def apply():
     if os.geteuid() != 0:
         fail("يلزم صلاحيات المسؤول.")
-    usb_root()
     if not PENDING.is_dir():
         fail("لا يوجد تحديث مجهز.")
     raw = (PENDING / "manifest.json").read_bytes()
@@ -160,8 +250,11 @@ def apply():
 
 def main():
     if len(sys.argv) != 2:
-        fail("استخدم --check أو --stage أو --apply.")
+        fail("استخدم --check أو --stage أو --apply أو --iso-download.")
     action = sys.argv[1]
+    if action == "--iso-download":
+        iso_download()
+        return
     if action == "--apply":
         apply()
         return

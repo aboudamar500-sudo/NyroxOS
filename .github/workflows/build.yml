@@ -97,10 +97,49 @@ jobs:
 
       - name: Prepare release files
         id: release
+        env:
+          NYROX_UPDATE_SIGNING_KEY: ${{ secrets.NYROX_UPDATE_SIGNING_KEY }}
         run: |
           set -euo pipefail
           mkdir -p release-files
           split -b 1900M -d -a 3 live-image-amd64.iso release-files/NyroxOS.iso.part-
+
+          python3 - <<'PYISO'
+          import hashlib, json
+          from pathlib import Path
+
+          def digest(path):
+              h = hashlib.sha256()
+              with path.open("rb") as f:
+                  for block in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(block)
+              return h.hexdigest()
+
+          iso = Path("live-image-amd64.iso")
+          parts = sorted(Path("release-files").glob("NyroxOS.iso.part-*"))
+          manifest = {
+              "type": "parts",
+              "final_size": iso.stat().st_size,
+              "final_sha256": digest(iso),
+              "parts": [
+                  {"index": i, "name": p.name, "size": p.stat().st_size,
+                   "sha256": digest(p)}
+                  for i, p in enumerate(parts)
+              ]
+          }
+          Path("release-files/iso-manifest.json").write_text(
+              json.dumps(manifest, separators=(",", ":")) + "\n"
+          )
+          PYISO
+
+          key=$(mktemp)
+          trap 'rm -f "$key" release-files/iso-manifest.sig.raw' EXIT
+          printf '%s' "$NYROX_UPDATE_SIGNING_KEY" > "$key"
+          openssl pkeyutl -sign -rawin -inkey "$key" \
+            -in release-files/iso-manifest.json \
+            -out release-files/iso-manifest.sig.raw
+          base64 -w0 release-files/iso-manifest.sig.raw > release-files/iso-manifest.json.sig
+          rm -f release-files/iso-manifest.sig.raw
           sha256sum release-files/* > release-files/SHA256SUMS
           echo "tag=nyroxos-build-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
