@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Android Studio
+Name[ar]=استوديو أندرويد
+Comment=Android application development environment
+Exec=/usr/local/bin/nyroxos-android-studio %F
+Icon=/opt/android-studio/bin/studio.png
+Terminal=false
+Categories=Development;IDE;Java;
+StartupNotify=true

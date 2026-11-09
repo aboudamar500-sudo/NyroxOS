@@ -1,0 +1,9 @@
+#!/bin/sh
+STUDIO="/opt/android-studio/bin/studio.sh"
+
+if [ ! -x "$STUDIO" ]; then
+    zenity --error --text="Android Studio is not installed correctly." 2>/dev/null
+    exit 1
+fi
+
+exec "$STUDIO" "$@"

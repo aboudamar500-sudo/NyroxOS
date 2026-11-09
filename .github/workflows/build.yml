@@ -3,7 +3,7 @@ name: Build NyroxOS
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, test-iso-boot]
 
 permissions:
   contents: write
@@ -22,6 +22,26 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           df -h /
+
+      - name: Download and install Android Studio
+        run: |
+          set -euo pipefail
+          archive=$(mktemp /tmp/android-studio-XXXXXX.tar.gz)
+          trap 'rm -f "$archive"' EXIT
+
+          curl -fL --retry 3 \
+            "https://github.com/aboudamar500-sudo/NyroxOS/releases/download/android-studio-rabbit2/android-studio-rabbit2-patch1-linux.tar.gz" \
+            -o "$archive"
+
+          echo "11ecbf0e6dc0f04a1353f797e45bf239a3ff1a82221539b1b8cdd7eab0d8d8ea  $archive" | sha256sum -c -
+
+          mkdir -p config/includes.chroot/opt
+          tar -xzf "$archive" -C config/includes.chroot/opt
+
+          test -f config/includes.chroot/opt/android-studio/bin/studio.sh
+          test -f config/includes.chroot/opt/android-studio/bin/studio.png
+
+          echo "Android Studio extracted and verified."
 
       - name: Build signed update bundle
         env:
@@ -80,7 +100,12 @@ jobs:
                 usr/share/nyroxos/keys/update-ed25519-public.pem \
                 usr/share/nyroxos/keys/fingerprint.sha256 \
                 usr/lib/systemd/system/nyroxos-update-apply.service \
-                usr/lib/systemd/system/multi-user.target.wants/nyroxos-update-apply.service; do
+                usr/lib/systemd/system/multi-user.target.wants/nyroxos-update-apply.service \
+                opt/android-studio/bin/studio.sh \
+                opt/android-studio/bin/studio.png \
+                usr/local/bin/nyroxos-android-studio \
+                usr/share/applications/android-studio.desktop \
+                etc/skel/Desktop/Android-Studio.desktop; do
                 grep -Fq "$item" /tmp/nyrox-files.txt || {
                   echo "Missing from ISO: $item"
                   exit 1
